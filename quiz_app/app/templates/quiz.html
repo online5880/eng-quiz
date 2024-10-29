@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="quiz-page-container">
+    <!-- 퀴즈 컨테이너 -->
+    <div class="quiz-section">
+        <div class="quiz-container">
+            <h2>영단어 퀴즈</h2>
+            <div class="question-card">
+                <div class="word">{{ question.word }}</div>
+                <form id="quiz-form" method="post">
+                    <input type="text" 
+                           name="answer" 
+                           placeholder="뜻을 입력하세요" 
+                           autocomplete="off" 
+                           required>
+                    <button type="submit" class="btn">정답 확인</button>
+                </form>
+                
+                <div id="result" style="display: none;">
+                    <p class="result-text"></p>
+                    <div class="example-container">
+                        <p class="example-en"></p>
+                        <p class="example-ko"></p>
+                    </div>
+                    <button id="next-btn" class="btn" style="display: none;">다음 문제</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 챗봇 컨테이너 -->
+    <div class="chatbot-section">
+        <div class="chatbot-container">
+            <div class="chat-header">
+                <h3>AI 학습 도우미</h3>
+                {% if not session.get('openai_api_key') %}
+                    <div class="api-key-warning">
+                        <p>AI 도우미를 사용하려면 API 키가 필요합니다.</p>
+                        <a href="{{ url_for('settings.index') }}" class="btn btn-sm">API 키 설정하기</a>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <!-- 메시지들이 여기에 동적으로 추가됨 -->
+            </div>
+            <form id="chat-form" class="chat-input-form">
+                <input type="text" id="chat-input" placeholder="질문을 입력하세요..." {% if not session.get('openai_api_key') %}disabled{% endif %}>
+                <button type="submit" class="btn" {% if not session.get('openai_api_key') %}disabled{% endif %}>
+                    <span class="send-icon">➤</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const chatForm = document.getElementById('chat-form');
+    const chatInput = document.getElementById('chat-input');
+    const chatMessages = document.getElementById('chat-messages');
+    const quizForm = document.getElementById('quiz-form');
+    const resultDiv = document.getElementById('result');
+    const resultText = document.querySelector('.result-text');
+    const exampleEn = document.querySelector('.example-en');
+    const exampleKo = document.querySelector('.example-ko');
+    const nextBtn = document.getElementById('next-btn');
+    
+    // 퀴즈 폼 제출 처리
+    if (quizForm) {
+        quizForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(quizForm);
+            const response = await fetch('/quiz/check', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            resultDiv.style.display = 'block';
+            if (result.correct) {
+                resultText.textContent = '정답입니다!';
+                resultText.className = 'result-text correct';
+            } else {
+                resultText.textContent = `틀렸습니다. 정답은 "${result.correct_answer}" 입니다.`;
+                resultText.className = 'result-text incorrect';
+            }
+            
+            exampleEn.textContent = result.example_en;
+            exampleKo.textContent = result.example_ko;
+            nextBtn.style.display = 'block';
+        });
+    }
+    
+    // 다음 문제 버튼 처리
+    if (nextBtn) {
+        nextBtn.addEventListener('click', async function() {
+            const response = await fetch('/quiz/next');
+            const data = await response.json();
+            
+            document.querySelector('.word').textContent = data.question.word;
+            quizForm.reset();
+            resultDiv.style.display = 'none';
+            nextBtn.style.display = 'none';
+        });
+    }
+    
+    // 챗봇 폼 제출 처리
+    if (chatForm) {
+        chatForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const question = chatInput.value.trim();
+            if (!question) return;
+            
+            addMessage(question, true);
+            chatInput.value = '';
+            
+            try {
+                const response = await fetch('/quiz/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: question })
+                });
+                
+                const data = await response.json();
+                addMessage(data.response);
+                
+            } catch (error) {
+                addMessage('죄송합니다. 오류가 발생했습니다.');
+            }
+        });
+    }
+    
+    function addMessage(content, isUser = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `chat-message ${isUser ? 'user-message' : 'bot-message'}`;
+        messageDiv.textContent = content;
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+});
+</script>
+{% endblock %}

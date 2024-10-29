@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="main-container">
+    <h1>영단어 퀴즈</h1>
+    <div class="welcome-box">
+        <h2>환영합니다!</h2>
+        <p>영단어 학습을 시작하려면 로그인하세요.</p>
+        <div class="auth-buttons">
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary">로그인</a>
+            <a href="{{ url_for('auth.register') }}" class="btn btn-secondary">회원가입</a>
+        </div>
+    </div>
+</div>
+{% endblock %} 

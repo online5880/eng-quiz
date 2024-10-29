@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>영단어 퀴즈</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('main.index') }}" class="nav-logo">영단어 퀴즈</a>
+            <div class="nav-links">
+                {% if current_user.is_authenticated %}
+                    <span class="username">{{ current_user.username }}님</span>
+                    <a href="{{ url_for('settings.index') }}" class="nav-link">API 설정</a>
+                    <a href="{{ url_for('auth.logout') }}" class="nav-link">로그아웃</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}" class="nav-link">로그인</a>
+                    <a href="{{ url_for('auth.register') }}" class="nav-link">회원가입</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    <main>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for message in messages %}
+                        <div class="flash-message">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
